@@ -22,8 +22,9 @@ text = speech_to_text(
     stop_prompt="Stop Recording 🛑",
     key='STT'
 )
-# Function to send push notification
-def send_push(message):
+# --- THE LOGIC ENGINE ---
+def send_to_phone(message):
+    """Sends a push notification to the ntfy app on your phone"""
     try:
         requests.post("https://ntfy.sh/floyd_zenith_alerts", 
             data=message.encode('utf-8'),
@@ -34,15 +35,17 @@ def send_push(message):
             }
         )
     except:
-        pass
+        pass # This prevents the app from crashing if the internet dips
 
 if text:
     st.info(f"Command received: {text}")
+    # Voice Trigger
     if "remind" in text.lower() or "notify" in text.lower():
-        send_push(text)
-        st.toast("Sent to phone! 📱")
+        send_to_phone(text)
+        st.toast("Sent to phone! 📱", icon='🚀')
         st.balloons()
     
+    # Add Voice to Table
     if "plan" in text.lower() or "add" in text.lower():
         task_type = "Reminder ⏰" if "at" in text.lower() else "Task 📋"
         st.session_state.tasks.append({"Time": datetime.now().strftime("%H:%M"), "Activity": text, "Type": task_type})
@@ -52,10 +55,10 @@ st.divider()
 user_input = st.text_input("Or type your plan here:")
 if st.button("Plan It"):
     if user_input:
-        # Check for notify keyword in manual typing too!
+        # Manual Typing Trigger (This is the part that was missing!)
         if "remind" in user_input.lower() or "notify" in user_input.lower():
-            send_push(user_input)
-            st.toast("Sent to phone! 📱")
+            send_to_phone(user_input)
+            st.toast("Sent to phone! 📱", icon='🚀')
             st.balloons()
             
         task_type = "Reminder ⏰" if "at" in user_input.lower() else "Task 📋"
@@ -71,4 +74,6 @@ if st.session_state.tasks:
         st.session_state.tasks = []
         st.rerun()
 else:
-    st.info("Your schedule is clear.")
+    st.info("Your schedule is clear. Use 'notify' or 'remind' to ping your phone!")
+
+st.caption("Zenith AI MVP v1.0 | Connected to Mobile via ntfy")
