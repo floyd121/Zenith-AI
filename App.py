@@ -22,7 +22,14 @@ text = speech_to_text(
     stop_prompt="Stop Recording 🛑",
     key='STT'
 )
-
+if text:
+    st.info(f"You said: {text}")
+    
+    # This triggers the notification
+    if "remind" in text.lower() or "notify" in text.lower():
+        st.toast(f"New Reminder: {text}", icon='🔔')
+        st.success("Notification active!")
+        st.balloons()
 if text:
     st.write(f"You said: **{text}**")
     # This is where we will eventually add the 'Plan' logic!
