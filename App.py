@@ -22,49 +22,48 @@ text = speech_to_text(
     stop_prompt="Stop Recording 🛑",
     key='STT'
 )
-if text:
-    st.info(f"Command received: {text}")
-    
-    # 1. This sends the real notification to your phone
-    if "remind" in text.lower() or "notify" in text.lower():
-        # Make sure you've installed 'ntfy' on your phone and subscribed to 'floyd_zenith_alerts'
+# Function to send push notification
+def send_push(message):
+    try:
         requests.post("https://ntfy.sh/floyd_zenith_alerts", 
-            data=text.encode('utf-8'),
+            data=message.encode('utf-8'),
             headers={
                 "Title": "Zenith AI Priority",
                 "Priority": "high",
                 "Tags": "loudspeaker,rotating_light"
             }
         )
-        st.toast("Notification pushed to your phone! 📱", icon='🚀')
+    except:
+        pass
+
+if text:
+    st.info(f"Command received: {text}")
+    if "remind" in text.lower() or "notify" in text.lower():
+        send_push(text)
+        st.toast("Sent to phone! 📱")
         st.balloons()
     
-    # 2. This adds it to your visual table
     if "plan" in text.lower() or "add" in text.lower():
         task_type = "Reminder ⏰" if "at" in text.lower() else "Task 📋"
-        st.session_state.tasks.append({
-            "Time": datetime.now().strftime("%H:%M"), 
-            "Activity": text, 
-            "Type": task_type
-        })
-        st.success("Added to your Blueprint!")
+        st.session_state.tasks.append({"Time": datetime.now().strftime("%H:%M"), "Activity": text, "Type": task_type})
 
 # --- MANUAL INPUT SECTION ---
 st.divider()
 user_input = st.text_input("Or type your plan here:")
 if st.button("Plan It"):
     if user_input:
+        # Check for notify keyword in manual typing too!
+        if "remind" in user_input.lower() or "notify" in user_input.lower():
+            send_push(user_input)
+            st.toast("Sent to phone! 📱")
+            st.balloons()
+            
         task_type = "Reminder ⏰" if "at" in user_input.lower() else "Task 📋"
-        st.session_state.tasks.append({
-            "Time": datetime.now().strftime("%H:%M"), 
-            "Activity": user_input, 
-            "Type": task_type
-        })
+        st.session_state.tasks.append({"Time": datetime.now().strftime("%H:%M"), "Activity": user_input, "Type": task_type})
         st.rerun()
 
 # --- THE VISUAL SCHEDULE ---
 st.subheader("Today's Blueprint")
-
 if st.session_state.tasks:
     df = pd.DataFrame(st.session_state.tasks)
     st.table(df)
@@ -72,6 +71,4 @@ if st.session_state.tasks:
         st.session_state.tasks = []
         st.rerun()
 else:
-    st.info("Your schedule is clear. Tell Zenith what you need to do!")
-
-st.caption("Zenith AI MVP v1.0 | Voice-to-Action enabled")
+    st.info("Your schedule is clear.")
