@@ -17,29 +17,54 @@ st.write("Say a command (e.g., 'Plan for Monday')")
 
 # This button records AND transcribes
 text = speech_to_text(
-    language='en',
-    start_prompt="Click to Speak 🎤",
-    stop_prompt="Stop Recording 🛑",
-    key='STT'
-)
-# THE SIMPLEST NOTIFICATION CODE
-if text or user_input:
-    cmd = text if text else user_input
-    if "notify" in cmd.lower() or "remind" in cmd.lower():
-        # This part talks to your phone
-        try:
-            requests.post("https://ntfy.sh/floyd_zenith_alerts", 
-                data=cmd.encode('utf-8'),
-                headers={"Title": "ZENITH ALERT", "Priority": "high"}
-            )
-            st.success("Signal sent to phone! 📱")
-            st.balloons()
-        except Exception as e:
-            st.error(f"Error: {e}")
+   # --- THE INPUT SECTION ---
+# 1. Voice Input
+text = streamlit_mic_recorder(start_prompt="Click to Speak 🎤", stop_prompt="Stop Recording 🛑", key='STT')
 
-    # This part adds it to your laptop table
+# 2. Typing Input
+st.divider()
+user_input = st.text_input("Example: 'Notify me to check scones at 17:00'")
+plan_button = st.button("Plan It")
+
+# --- THE NOTIFICATION ENGINE ---
+def send_ping(message):
+    try:
+        requests.post("https://ntfy.sh/floyd_zenith_alerts", 
+            data=message.encode('utf-8'),
+            headers={"Title": "ZENITH ALERT", "Priority": "high"}
+        )
+        st.toast("Signal sent to phone! 📱")
+        st.balloons()
+    except:
+        st.error("Connection failed. Check your internet!")
+
+# --- THE LOGIC (What happens when you speak or type) ---
+active_text = text if text else (user_input if plan_button else None)
+
+if active_text:
+    # Trigger Notification
+    if "notify" in active_text.lower() or "remind" in active_text.lower():
+        send_ping(active_text)
+    
+    # Add to Table
+    task_type = "Reminder ⏰" if "at" in active_text.lower() or ":" in active_text.lower() else "Task 📋"
     st.session_state.tasks.append({
         "Time": datetime.now().strftime("%H:%M"), 
-        "Activity": cmd, 
-        "Type": "Reminder ⏰"
+        "Activity": active_text, 
+        "Type": task_type
     })
+    if plan_button:
+        st.rerun()
+
+# --- THE VISUAL SCHEDULE ---
+st.subheader("Today's Blueprint")
+if st.session_state.tasks:
+    df = pd.DataFrame(st.session_state.tasks)
+    st.table(df)
+    if st.button("Clear My Day"):
+        st.session_state.tasks = []
+        st.rerun()
+else:
+    st.info("Schedule clear. Use 'notify' to ping your phone!")
+
+st.caption("Zenith AI MVP v1.0 | Connected to Mobile via ntfy"
