@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import streamlit_notification
 
 # --- APP CONFIG ---
 st.set_page_config(page_title="Zenith AI Planner", page_icon="🤖")
