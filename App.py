@@ -13,6 +13,14 @@ if "tasks" not in st.session_state:
 
 # --- INPUT SECTION ---
 st.subheader("What's on your mind?")
+audio_value = mic_recorder(
+    start_prompt="Click to Speak 🎤",
+    stop_prompt="Stop Recording 🛑",
+    key='recorder'
+)
+
+if audio_value:
+    st.audio(audio_value['bytes'])
 user_input = st.text_input("Example: 'Remind me to call Mom at 5pm' or 'I need to finish my essay today'")
 
 if st.button("Plan It"):
