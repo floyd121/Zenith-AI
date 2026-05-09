@@ -1,2 +1,2 @@
 streamlit
-streamlit-speech-to-text
+streamlit-mic-recorder
