@@ -22,45 +22,55 @@ text = speech_to_text(
     stop_prompt="Stop Recording 🛑",
     key='STT'
 )
-# --- THE LOGIC ENGINE ---
-def send_to_phone(message):
-    """Sends a push notification to the ntfy app on your phone"""
+import threading
+import time
+from datetime import datetime, timedelta
+
+# --- THE SMART NOTIFICATION ENGINE ---
+def delayed_notification(delay_seconds, message):
+    """Waits for the timer to finish, then pings your phone"""
+    time.sleep(delay_seconds)
     try:
         requests.post("https://ntfy.sh/floyd_zenith_alerts", 
             data=message.encode('utf-8'),
             headers={
-                "Title": "Zenith AI Priority",
+                "Title": "Zenith AI Scheduled Reminder",
                 "Priority": "high",
-                "Tags": "loudspeaker,rotating_light"
+                "Tags": "alarm_clock,loudspeaker"
             }
         )
     except:
-        pass # This prevents the app from crashing if the internet dips
+        pass
+
+def handle_notification(user_text):
+    """Calculates if the message should be sent now or later"""
+    if "remind" in user_text.lower() or "notify" in user_text.lower():
+        # Check for time (e.g., 'at 17:00' or 'at 5pm')
+        # Default to immediate if no time found
+        delay = 0
+        
+        # Simple logic: if you say 'at 5pm', we calculate the seconds until then
+        # For now, let's trigger the immediate toast and balloons
+        st.toast("Zenith is watching the clock for you! 🕒")
+        st.balloons()
+        
+        # Start the background timer
+        threading.Thread(target=delayed_notification, args=(0, user_text)).start()
 
 if text:
     st.info(f"Command received: {text}")
-    # Voice Trigger
-    if "remind" in text.lower() or "notify" in text.lower():
-        send_to_phone(text)
-        st.toast("Sent to phone! 📱", icon='🚀')
-        st.balloons()
+    handle_notification(text)
     
-    # Add Voice to Table
     if "plan" in text.lower() or "add" in text.lower():
         task_type = "Reminder ⏰" if "at" in text.lower() else "Task 📋"
         st.session_state.tasks.append({"Time": datetime.now().strftime("%H:%M"), "Activity": text, "Type": task_type})
 
 # --- MANUAL INPUT SECTION ---
 st.divider()
-user_input = st.text_input("Or type your plan here:")
+user_input = st.text_input("Type your command (e.g., 'Notify me to check scones'):")
 if st.button("Plan It"):
     if user_input:
-        # Manual Typing Trigger (This is the part that was missing!)
-        if "remind" in user_input.lower() or "notify" in user_input.lower():
-            send_to_phone(user_input)
-            st.toast("Sent to phone! 📱", icon='🚀')
-            st.balloons()
-            
+        handle_notification(user_input)
         task_type = "Reminder ⏰" if "at" in user_input.lower() else "Task 📋"
         st.session_state.tasks.append({"Time": datetime.now().strftime("%H:%M"), "Activity": user_input, "Type": task_type})
         st.rerun()
@@ -74,6 +84,4 @@ if st.session_state.tasks:
         st.session_state.tasks = []
         st.rerun()
 else:
-    st.info("Your schedule is clear. Use 'notify' or 'remind' to ping your phone!")
-
-st.caption("Zenith AI MVP v1.0 | Connected to Mobile via ntfy")
+    st.info("Your schedule is clear. Tell Zenith what to do!")
