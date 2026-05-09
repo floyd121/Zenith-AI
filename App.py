@@ -25,13 +25,21 @@ text = speech_to_text(
 if text:
     st.info(f"Command received: {text}")
     
-    # 1. Trigger Notification/Balloons
+    # 1. This sends the real notification to your phone
     if "remind" in text.lower() or "notify" in text.lower():
-        st.toast(f"New Reminder: {text}", icon='🔔')
-        st.success("Notification active!")
+        # Make sure you've installed 'ntfy' on your phone and subscribed to 'floyd_zenith_alerts'
+        requests.post("https://ntfy.sh/floyd_zenith_alerts", 
+            data=text.encode('utf-8'),
+            headers={
+                "Title": "Zenith AI Priority",
+                "Priority": "high",
+                "Tags": "loudspeaker,rotating_light"
+            }
+        )
+        st.toast("Notification pushed to your phone! 📱", icon='🚀')
         st.balloons()
     
-    # 2. Automatically add to the "Blueprint" Table
+    # 2. This adds it to your visual table
     if "plan" in text.lower() or "add" in text.lower():
         task_type = "Reminder ⏰" if "at" in text.lower() else "Task 📋"
         st.session_state.tasks.append({
@@ -42,7 +50,7 @@ if text:
         st.success("Added to your Blueprint!")
 
 # --- MANUAL INPUT SECTION ---
-st.write("---")
+st.divider()
 user_input = st.text_input("Or type your plan here:")
 if st.button("Plan It"):
     if user_input:
