@@ -23,26 +23,27 @@ text = speech_to_text(
     key='STT'
 )
 if text:
-    st.info(f"You said: {text}")
+    st.info(f"Command received: {text}")
     
-    # This triggers the notification
+    # Trigger notification logic
     if "remind" in text.lower() or "notify" in text.lower():
         st.toast(f"New Reminder: {text}", icon='🔔')
         st.success("Notification active!")
         st.balloons()
-if text:
-    st.write(f"You said: **{text}**")
-    # This is where we will eventually add the 'Plan' logic!
+    
+    # Auto-add to schedule if you say 'plan'
     if "plan" in text.lower():
-        st.success("Planning mode activated!")
-user_input = st.text_input("Example: 'Remind me to call Mom at 5pm' or 'I need to finish my essay today'")
+        task_type = "Reminder ⏰" if "at" in text.lower() else "Task 📋"
+        st.session_state.tasks.append({"Time": datetime.now().strftime("%H:%M"), "Activity": text, "Type": task_type})
+        st.success("Added to your Blueprint!")
 
+# --- MANUAL INPUT SECTION ---
+user_input = st.text_input("Or type your plan here:")
 if st.button("Plan It"):
     if user_input:
-        # Simple AI Logic: In a full version, we connect this to Gemini's API
-        task_type = "Reminder ⏰" if "at" in user_input.lower() or ":" in user_input else "Task 📝"
+        task_type = "Reminder ⏰" if "at" in user_input.lower() else "Task 📋"
         st.session_state.tasks.append({"Time": datetime.now().strftime("%H:%M"), "Activity": user_input, "Type": task_type})
-        st.success("Got it! I've added that to your timeline.")
+        st.rerun()
 
 # --- THE VISUAL SCHEDULE ---
 st.divider()
@@ -50,13 +51,11 @@ st.subheader("Today's Blueprint")
 
 if st.session_state.tasks:
     df = pd.DataFrame(st.session_state.tasks)
-    st.table(df) # This creates a clean list for the user
-    
+    st.table(df)
     if st.button("Clear My Day"):
         st.session_state.tasks = []
         st.rerun()
 else:
     st.info("Your schedule is clear. Tell Zenith what you need to do!")
 
-# --- FOOTER ---
-st.caption("Zenith AI MVP v1.0 | Voice-to-Action enabled via Mobile Browser")
+st.caption("Zenith AI MVP v1.0 | Voice-to-Action enabled")
