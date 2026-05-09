@@ -2,49 +2,45 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import requests
-from streamlit_mic_recorder import streamlit_mic_recorder
 
+# Page Setup
 st.set_page_config(page_title="Zenith AI", page_icon="🧠")
-st.title("🧠 Zenith AI")
+st.title("🧠 Zenith AI: Back to Basics")
 
 if 'tasks' not in st.session_state:
     st.session_state.tasks = []
 
-# --- INPUT SECTION ---
-st.subheader("What's the plan?")
-voice_data = streamlit_mic_recorder(start_prompt="Record 🎤", stop_prompt="Stop 🛑", key='STT')
+# Input Section
+st.subheader("Plan your day:")
+user_text = st.text_input("Type your command (e.g., 'notify check scones')")
+plan_btn = st.button("Plan It")
 
-st.divider()
-user_text = st.text_input("Type here:")
-plan_it = st.button("Plan It")
-
-# --- LOGIC ---
-final_msg = None
-if voice_data and voice_data.get('text'):
-    final_msg = voice_data['text']
-elif plan_it and user_text:
-    final_msg = user_text
-
-if final_msg:
-    if "notify" in final_msg.lower() or "remind" in final_msg.lower():
+if plan_btn and user_text:
+    # 1. Send to Phone
+    if "notify" in user_text.lower() or "remind" in user_text.lower():
         try:
-            requests.post("https://ntfy.sh/floyd_zenith_alerts", data=final_msg.encode('utf-8'))
+            # Pinging your ntfy topic
+            requests.post("https://ntfy.sh/floyd_zenith_alerts", 
+                          data=user_text.encode('utf-8'))
             st.balloons()
-            st.toast("Sent to phone! 📱")
+            st.toast("Ping sent to phone! 📱")
         except:
-            st.error("Failed to reach phone.")
+            st.error("Notification failed.")
 
+    # 2. Add to Table
     st.session_state.tasks.append({
         "Time": datetime.now().strftime("%H:%M"), 
-        "Activity": final_msg, 
-        "Type": "Reminder ⏰" if "notify" in final_msg.lower() else "Task 📋"
+        "Activity": user_text, 
+        "Type": "Reminder ⏰" if "notify" in user_text.lower() else "Task 📋"
     })
-    if plan_it:
-        st.rerun()
+    st.rerun()
 
-# --- TABLE ---
+# Display Table
+st.subheader("Today's Blueprint")
 if st.session_state.tasks:
     st.table(pd.DataFrame(st.session_state.tasks))
     if st.button("Clear Day"):
         st.session_state.tasks = []
         st.rerun()
+else:
+    st.info("Ready for your first command!")
