@@ -1,3 +1,4 @@
 streamlit
 streamlit-mic-recorder
-import requests
+requests
+pandas
