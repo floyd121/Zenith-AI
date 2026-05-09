@@ -1,2 +1,15 @@
 streamlit
 streamlit-mic-recorder
+if text:
+    st.write(f"You said: **{text}**")
+    
+    # Check if the user said "notify" or "remind"
+    if "notify" in text.lower() or "remind" in text.lower():
+        # This creates a "Toast" notification in the bottom right corner
+        st.toast('Notification Set!', icon='🔔')
+        
+        # This shows a big success message on the main screen
+        st.success(f"I'll remind you about: {text}")
+        
+        # Bonus: Play a notification sound (optional)
+        st.balloons()
