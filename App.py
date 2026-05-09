@@ -25,28 +25,36 @@ text = speech_to_text(
 if text:
     st.info(f"Command received: {text}")
     
-    # Trigger notification logic
+    # 1. Trigger Notification/Balloons
     if "remind" in text.lower() or "notify" in text.lower():
         st.toast(f"New Reminder: {text}", icon='🔔')
         st.success("Notification active!")
         st.balloons()
     
-    # Auto-add to schedule if you say 'plan'
-    if "plan" in text.lower():
+    # 2. Automatically add to the "Blueprint" Table
+    if "plan" in text.lower() or "add" in text.lower():
         task_type = "Reminder ⏰" if "at" in text.lower() else "Task 📋"
-        st.session_state.tasks.append({"Time": datetime.now().strftime("%H:%M"), "Activity": text, "Type": task_type})
+        st.session_state.tasks.append({
+            "Time": datetime.now().strftime("%H:%M"), 
+            "Activity": text, 
+            "Type": task_type
+        })
         st.success("Added to your Blueprint!")
 
 # --- MANUAL INPUT SECTION ---
+st.write("---")
 user_input = st.text_input("Or type your plan here:")
 if st.button("Plan It"):
     if user_input:
         task_type = "Reminder ⏰" if "at" in user_input.lower() else "Task 📋"
-        st.session_state.tasks.append({"Time": datetime.now().strftime("%H:%M"), "Activity": user_input, "Type": task_type})
+        st.session_state.tasks.append({
+            "Time": datetime.now().strftime("%H:%M"), 
+            "Activity": user_input, 
+            "Type": task_type
+        })
         st.rerun()
 
 # --- THE VISUAL SCHEDULE ---
-st.divider()
 st.subheader("Today's Blueprint")
 
 if st.session_state.tasks:
