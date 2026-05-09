@@ -7,24 +7,14 @@ import re
 import threading
 import time
 
+# --- APP CONFIG ---
 st.set_page_config(page_title="Zenith AI", page_icon="🧠")
-
 st.title("🧠 Zenith AI: Your Day, Planned.")
-st.subheader("What's on your mind?")
 
 if 'tasks' not in st.session_state:
     st.session_state.tasks = []
 
-# --- 1. THE INPUTS ---
-# Voice Input
-text = streamlit_mic_recorder(start_prompt="Click to Speak 🎤", stop_prompt="Stop Recording 🛑", key='STT')
-
-# Typing Input
-st.divider()
-user_input = st.text_input("Example: 'Notify me to check scones at 17:00'")
-plan_button = st.button("Plan It")
-
-# --- 2. THE NOTIFICATION ENGINE ---
+# --- 1. THE NOTIFICATION ENGINE ---
 def send_ping(message):
     """Sends the actual signal to your phone via ntfy"""
     try:
@@ -36,11 +26,10 @@ def send_ping(message):
         pass
 
 def handle_logic(raw_text):
-    """Checks for 'notify' and adds to the table"""
     if raw_text:
         # Check for Notification Trigger
         if "notify" in raw_text.lower() or "remind" in raw_text.lower():
-            # Look for a time like 15:30 or 17:00
+            # Look for 24h time like 17:00
             time_match = re.search(r'(\d{1,2}):(\d{2})', raw_text)
             
             if time_match:
@@ -51,10 +40,9 @@ def handle_logic(raw_text):
                     target_time += timedelta(days=1)
                 
                 wait_seconds = (target_time - now).total_seconds()
-                st.success(f"Clock set! Ping coming at {target_h}:{target_m:02d} 🕒")
-                threading.Thread(target=lambda: (time.sleep(wait_seconds), send_ping(raw_text))).start()
+                st.success(f"Clock set for {target_h}:{target_m:02d} 🕒")
+                threading.Thread(target=lambda: (time.sleep(max(0, wait_seconds)), send_ping(raw_text))).start()
             else:
-                # No time? Send it now!
                 send_ping(raw_text)
                 st.toast("Sent to phone! 📱")
                 st.balloons()
@@ -66,15 +54,23 @@ def handle_logic(raw_text):
             "Type": "Reminder ⏰" if "notify" in raw_text.lower() else "Task 📋"
         })
 
-# --- 3. EXECUTION ---
+# --- 2. THE INPUTS ---
+st.subheader("What's on your mind?")
+# Voice Input
+text = streamlit_mic_recorder(start_prompt="Click to Speak 🎤", stop_prompt="Stop Recording 🛑", key='STT')
+
+# Typing Input
+st.divider()
+user_input = st.text_input("Type here (e.g., 'Notify me at 17:00')")
+if st.button("Plan It"):
+    if user_input:
+        handle_logic(user_input)
+        st.rerun()
+
 if text:
     handle_logic(text)
 
-if plan_button and user_input:
-    handle_logic(user_input)
-    st.rerun()
-
-# --- 4. THE VISUAL SCHEDULE ---
+# --- 3. THE VISUAL SCHEDULE ---
 st.subheader("Today's Blueprint")
 if st.session_state.tasks:
     df = pd.DataFrame(st.session_state.tasks)
