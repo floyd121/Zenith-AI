@@ -4,50 +4,53 @@ from datetime import datetime
 import requests
 from streamlit_mic_recorder import streamlit_mic_recorder
 
+# 1. Page Setup
 st.set_page_config(page_title="Zenith AI", page_icon="🧠")
 st.title("🧠 Zenith AI")
 
 if 'tasks' not in st.session_state:
     st.session_state.tasks = []
 
-# --- INPUT SECTION ---
+# 2. Input Section
 st.subheader("What's the plan?")
-# Capture voice
-voice_input = streamlit_mic_recorder(start_prompt="Record 🎤", stop_prompt="Stop 🛑", key='STT')
+voice_data = streamlit_mic_recorder(start_prompt="Record 🎤", stop_prompt="Stop 🛑", key='STT')
 
 st.divider()
-user_text = st.text_input("Or type here:")
-plan_btn = st.button("Plan It")
+user_text = st.text_input("Or type your command here:")
+plan_it = st.button("Plan It")
 
-# --- LOGIC ---
+# 3. The Logic
 final_msg = None
-if voice_input and voice_input.get('text'):
-    final_msg = voice_input['text']
-elif plan_btn and user_text:
+# Check voice first
+if voice_data and voice_data.get('text'):
+    final_msg = voice_data['text']
+# Then check the text box
+elif plan_it and user_text:
     final_msg = user_text
 
 if final_msg:
-    # Notification Logic
+    # If you say 'notify', send it to the phone immediately
     if "notify" in final_msg.lower() or "remind" in final_msg.lower():
         try:
             requests.post("https://ntfy.sh/floyd_zenith_alerts", data=final_msg.encode('utf-8'))
             st.balloons()
-            st.toast("Ping sent to phone! 📱")
+            st.toast("Sent to phone! 📱")
         except:
-            st.error("Notification failed.")
+            st.error("Failed to reach your phone. Check internet!")
 
-    # Add to Table
+    # Add to your Blueprint table
     st.session_state.tasks.append({
         "Time": datetime.now().strftime("%H:%M"), 
         "Activity": final_msg, 
         "Type": "Reminder ⏰" if "notify" in final_msg.lower() else "Task 📋"
     })
-    if plan_btn:
+    if plan_it:
         st.rerun()
 
-# --- DISPLAY ---
+# 4. Display the Table
 if st.session_state.tasks:
     st.table(pd.DataFrame(st.session_state.tasks))
     if st.button("Clear Day"):
         st.session_state.tasks = []
         st.rerun()
+    
