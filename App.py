@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from streamlit_mic_recorder import mic_recorder
+from streamlit_mic_recorder import mic_recorder, speech_to_text
 
 # --- APP CONFIG ---
 st.set_page_config(page_title="Zenith AI Planner", page_icon="🤖")
@@ -13,14 +13,21 @@ if "tasks" not in st.session_state:
 
 # --- INPUT SECTION ---
 st.subheader("What's on your mind?")
-audio_value = mic_recorder(
+st.write("Say a command (e.g., 'Plan for Monday')")
+
+# This button records AND transcribes
+text = speech_to_text(
+    language='en',
     start_prompt="Click to Speak 🎤",
     stop_prompt="Stop Recording 🛑",
-    key='recorder'
+    key='STT'
 )
 
-if audio_value:
-    st.audio(audio_value['bytes'])
+if text:
+    st.write(f"You said: **{text}**")
+    # This is where we will eventually add the 'Plan' logic!
+    if "plan" in text.lower():
+        st.success("Planning mode activated!")
 user_input = st.text_input("Example: 'Remind me to call Mom at 5pm' or 'I need to finish my essay today'")
 
 if st.button("Plan It"):
