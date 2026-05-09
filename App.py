@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from strenlit_mic_recorder import mic_recorder
+from strenlit_mic_recorder importmic_recorder
 
 # --- APP CONFIG ---
 st.set_page_config(page_title="Zenith AI Planner", page_icon="🤖")
