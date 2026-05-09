@@ -1,2 +1,2 @@
 streamlit
-streamlit_speech_to_text
+streamlit-speech-to-text
