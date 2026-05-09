@@ -4,49 +4,45 @@ from datetime import datetime
 import requests
 from streamlit_mic_recorder import streamlit_mic_recorder
 
-# Set up page
 st.set_page_config(page_title="Zenith AI", page_icon="🧠")
 st.title("🧠 Zenith AI")
 
 if 'tasks' not in st.session_state:
     st.session_state.tasks = []
 
-# --- INPUTS ---
-st.subheader("What is the plan?")
-# Capture voice input
-voice_val = streamlit_mic_recorder(start_prompt="Record 🎤", stop_prompt="Stop 🛑", key='STT')
+# --- INPUT SECTION ---
+st.subheader("What's the plan?")
+# Capture voice
+voice_input = streamlit_mic_recorder(start_prompt="Record 🎤", stop_prompt="Stop 🛑", key='STT')
 
 st.divider()
 user_text = st.text_input("Or type here:")
-btn = st.button("Plan It")
+plan_btn = st.button("Plan It")
 
 # --- LOGIC ---
-# Determine which input to use
 final_msg = None
-if voice_val:
-    final_msg = voice_val['text']
-elif btn and user_text:
+if voice_input and voice_input.get('text'):
+    final_msg = voice_input['text']
+elif plan_btn and user_text:
     final_msg = user_text
 
 if final_msg:
-    # Handle Notification
+    # Notification Logic
     if "notify" in final_msg.lower() or "remind" in final_msg.lower():
         try:
             requests.post("https://ntfy.sh/floyd_zenith_alerts", data=final_msg.encode('utf-8'))
             st.balloons()
             st.toast("Ping sent to phone! 📱")
         except:
-            st.error("Notification failed to send.")
+            st.error("Notification failed.")
 
-    # Add to Blueprint
+    # Add to Table
     st.session_state.tasks.append({
         "Time": datetime.now().strftime("%H:%M"), 
         "Activity": final_msg, 
         "Type": "Reminder ⏰" if "notify" in final_msg.lower() else "Task 📋"
     })
-    
-    # Rerun to show update if button was clicked
-    if btn:
+    if plan_btn:
         st.rerun()
 
 # --- DISPLAY ---
