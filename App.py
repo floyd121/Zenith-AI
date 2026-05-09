@@ -24,54 +24,57 @@ text = speech_to_text(
 )
 import threading
 import time
-from datetime import datetime, timedelta
+import re
 
 # --- THE SMART NOTIFICATION ENGINE ---
-def delayed_notification(delay_seconds, message):
-    """Waits for the timer to finish, then pings your phone"""
-    time.sleep(delay_seconds)
+def send_ping(message):
+    """Sends the actual signal to your phone"""
     try:
         requests.post("https://ntfy.sh/floyd_zenith_alerts", 
             data=message.encode('utf-8'),
-            headers={
-                "Title": "Zenith AI Scheduled Reminder",
-                "Priority": "high",
-                "Tags": "alarm_clock,loudspeaker"
-            }
+            headers={"Title": "Zenith AI: Time to Act!", "Priority": "high", "Tags": "alarm_clock,loudspeaker"}
         )
-    except:
-        pass
+    except: pass
 
-def handle_notification(user_text):
-    """Calculates if the message should be sent now or later"""
-    if "remind" in user_text.lower() or "notify" in user_text.lower():
-        # Check for time (e.g., 'at 17:00' or 'at 5pm')
-        # Default to immediate if no time found
-        delay = 0
+def schedule_notification(user_text):
+    """Calculates if it should send now or wait for a specific time"""
+    user_text = user_text.lower()
+    if "notify" in user_text or "remind" in user_text:
+        # Check for 24h time like '17:00'
+        time_match = re.search(r'(\d{1,2}):(\d{2})', user_text)
         
-        # Simple logic: if you say 'at 5pm', we calculate the seconds until then
-        # For now, let's trigger the immediate toast and balloons
-        st.toast("Zenith is watching the clock for you! 🕒")
-        st.balloons()
-        
-        # Start the background timer
-        threading.Thread(target=delayed_notification, args=(0, user_text)).start()
+        if time_match:
+            target_h, target_m = map(int, time_match.groups())
+            now = datetime.now()
+            target_time = now.replace(hour=target_h, minute=target_m, second=0)
+            
+            # If time already passed today, assume it's for tomorrow
+            if target_time < now:
+                target_time += timedelta(days=1)
+            
+            wait_seconds = (target_time - now).total_seconds()
+            
+            st.success(f"Clock set! I'll ping your phone at {target_h}:{target_m:02d}")
+            threading.Thread(target=lambda: (time.sleep(wait_seconds), send_ping(user_text))).start()
+        else:
+            # No time found? Send it immediately
+            send_ping(user_text)
+            st.toast("Sent to phone! 📱")
+            st.balloons()
 
 if text:
     st.info(f"Command received: {text}")
-    handle_notification(text)
-    
-    if "plan" in text.lower() or "add" in text.lower():
-        task_type = "Reminder ⏰" if "at" in text.lower() else "Task 📋"
-        st.session_state.tasks.append({"Time": datetime.now().strftime("%H:%M"), "Activity": text, "Type": task_type})
+    schedule_notification(text)
+    task_type = "Reminder ⏰" if "at" in text.lower() or ":" in text.lower() else "Task 📋"
+    st.session_state.tasks.append({"Time": datetime.now().strftime("%H:%M"), "Activity": text, "Type": task_type})
 
 # --- MANUAL INPUT SECTION ---
 st.divider()
-user_input = st.text_input("Type your command (e.g., 'Notify me to check scones'):")
+user_input = st.text_input("Example: 'Notify me to check scones at 17:00'")
 if st.button("Plan It"):
     if user_input:
-        handle_notification(user_input)
-        task_type = "Reminder ⏰" if "at" in user_input.lower() else "Task 📋"
+        schedule_notification(user_input)
+        task_type = "Reminder ⏰" if "at" in user_input.lower() or ":" in user_input.lower() else "Task 📋"
         st.session_state.tasks.append({"Time": datetime.now().strftime("%H:%M"), "Activity": user_input, "Type": task_type})
         st.rerun()
 
@@ -84,4 +87,4 @@ if st.session_state.tasks:
         st.session_state.tasks = []
         st.rerun()
 else:
-    st.info("Your schedule is clear. Tell Zenith what to do!")
+    st.info("Schedule clear. Use 'notify' + a time (e.g. 17:00) to ping your phone!")
